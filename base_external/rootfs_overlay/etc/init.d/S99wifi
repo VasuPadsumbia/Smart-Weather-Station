@@ -1,4 +1,40 @@
 #!/bin/sh
-# Start Wi-Fi manually at boot
-wpa_supplicant -B -i wlan0 -c /etc/wpa_supplicant.conf
-udhcpc -i wlan0
+
+case "$1" in
+  start)
+    echo "[S99wifi] Starting Wi-Fi connection..."
+
+    # Start wpa_supplicant in background
+    if wpa_supplicant -B -i wlan0 -c /etc/wpa_supplicant.conf; then
+      echo "[S99wifi] wpa_supplicant started successfully."
+    else
+      echo "[S99wifi] Failed to start wpa_supplicant."
+      exit 1
+    fi
+
+    # Obtain IP address via DHCP
+    if udhcpc -i wlan0; then
+      echo "[S99wifi] DHCP succeeded."
+    else
+      echo "[S99wifi] DHCP failed."
+      exit 1
+    fi
+    ;;
+
+  stop)
+    echo "[S99wifi] Stopping Wi-Fi..."
+    killall udhcpc
+    killall wpa_supplicant
+    ;;
+
+  restart)
+    $0 stop
+    sleep 1
+    $0 start
+    ;;
+
+  *)
+    echo "Usage: $0 {start|stop|restart}"
+    exit 1
+    ;;
+esac
