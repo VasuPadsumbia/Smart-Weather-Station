@@ -1,0 +1,4 @@
+/home/vasu/AELD/Smart-Weather-Station/app/build/CMakeFiles/weather_app.dir
+/home/vasu/AELD/Smart-Weather-Station/app/build/CMakeFiles/server_app.dir
+/home/vasu/AELD/Smart-Weather-Station/app/build/CMakeFiles/edit_cache.dir
+/home/vasu/AELD/Smart-Weather-Station/app/build/CMakeFiles/rebuild_cache.dir

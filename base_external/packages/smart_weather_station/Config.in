@@ -1,0 +1,4 @@
+config BR2_PACKAGE_SMART_WEATHER_STATION
+    bool "Smart Weather Station"
+    help
+      Installs the Smart Weather Station application and dependencies.

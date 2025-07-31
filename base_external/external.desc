@@ -1,0 +1,4 @@
+name: SmartWeatherStation
+version: 1.0.0
+description: A smart weather station that collects and publishes weather data.
+maintainer: Vasu Padsumbia

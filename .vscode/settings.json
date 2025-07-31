@@ -1,0 +1,6 @@
+{
+    "cmake.sourceDirectory": "/home/vasu/AELD/Smart-Weather-Station/app",
+    "files.associations": {
+        "bme280.h": "c"
+    }
+}
