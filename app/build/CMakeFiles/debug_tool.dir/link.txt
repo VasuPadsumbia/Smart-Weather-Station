@@ -1,1 +1,0 @@
-/usr/bin/cc CMakeFiles/debug_tool.dir/sensor_driver/debug/debug_tool.c.o -o debug_tool 

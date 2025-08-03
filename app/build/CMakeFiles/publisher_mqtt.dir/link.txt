@@ -1,1 +1,0 @@
-/usr/bin/c++ CMakeFiles/publisher_mqtt.dir/sensor_driver/cpp_mqtt_publisher/publisher_mqtt.cpp.o -o publisher_mqtt  -lmosquitto 

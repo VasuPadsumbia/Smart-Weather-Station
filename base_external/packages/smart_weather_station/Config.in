@@ -1,4 +1,5 @@
 config BR2_PACKAGE_SMART_WEATHER_STATION
     bool "Smart Weather Station"
+    select BR2_PACKAGE_LIBCURL
     help
       Installs the Smart Weather Station application and dependencies.

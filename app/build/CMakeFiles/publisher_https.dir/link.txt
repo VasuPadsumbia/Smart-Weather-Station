@@ -1,1 +1,0 @@
-/usr/bin/c++ CMakeFiles/publisher_https.dir/sensor_driver/cpp_https_publisher/publisher_https.cpp.o -o publisher_https  /usr/lib/x86_64-linux-gnu/libcurl.so 
