@@ -1,8 +1,12 @@
 #include "publisher_mqtt.h"
 
 
-bool publish_mqtt(const bme280_data_t& data, const char* broker, const char* topic) {
-    mosquitto_lib_init();
+bool publish_mqtt(const bme280_data_t& data, const char* broker, const char* topic, int mqtt_port) {
+    static bool initialized = false;
+    if (!initialized) {
+        mosquitto_lib_init();
+        initialized = true;
+    }
 
     mosquitto *mosq = mosquitto_new(NULL, true, NULL);
     if (!mosq) {
@@ -10,7 +14,7 @@ bool publish_mqtt(const bme280_data_t& data, const char* broker, const char* top
         return false;
     }
 
-    if (mosquitto_connect(mosq, broker, 1883, 60) != MOSQ_ERR_SUCCESS) {
+    if (mosquitto_connect(mosq, broker, mqtt_port, 60) != MOSQ_ERR_SUCCESS) {
         std::cerr << "Mosquitto connect failed\n";
         mosquitto_destroy(mosq);
         return false;
@@ -30,9 +34,12 @@ bool publish_mqtt(const bme280_data_t& data, const char* broker, const char* top
         mosquitto_destroy(mosq);
         return false;
     }
+    //mosquitto_lib_cleanup();
+    return true;
+}
 
+void mosquitto_cleanup(mosquitto* mosq) {
     mosquitto_disconnect(mosq);
     mosquitto_destroy(mosq);
     mosquitto_lib_cleanup();
-    return true;
 }

@@ -5,4 +5,5 @@
 #include <sstream>
 #include <iostream>
 
-bool publish_mqtt(const bme280_data_t& data, const char* broker, const char* topic);
+bool publish_mqtt(const bme280_data_t& data, const char* broker, const char* topic, int mqtt_port);
+void mosquitto_cleanup(mosquitto* mosq);

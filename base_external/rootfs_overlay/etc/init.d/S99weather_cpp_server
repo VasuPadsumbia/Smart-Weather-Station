@@ -12,23 +12,26 @@ DAEMON="$DAEMON_PATH/weather_cpp_server"
 PIDFILE="/var/run/weather_cpp_server.pid"
 LOGFILE="/var/log/weather_cpp_server.log"
 
-case "$1" in
-  start)
-    echo "Starting weather_cpp_server..."
-    start-stop-daemon --start --background --make-pidfile --pidfile $PIDFILE --exec $DAEMON
-    ;;
-  stop)
-    echo "Stopping weather_cpp_server..."
-    start-stop-daemon --stop --pidfile $PIDFILE
-    ;;
-  restart)
-    $0 stop
-    sleep 1
-    $0 start
-    ;;
-  *)
-    echo "Usage: $0 {start|stop|restart}"
-    exit 1
-esac
-
-exit 0
+modprobe i2c-dev
+modprobe i2c-bcm2708
+modprobe i2c-bcm2835
+#case "$1" in
+#  start)
+#    echo "Starting weather_cpp_server..."
+#    start-stop-daemon --start --background --make-pidfile --pidfile $PIDFILE --exec $DAEMON
+#    ;;
+#  stop)
+#    echo "Stopping weather_cpp_server..."
+#    start-stop-daemon --stop --pidfile $PIDFILE
+#    ;;
+#  restart)
+#    $0 stop
+#    sleep 1
+#    $0 start
+#    ;;
+#  *)
+#    echo "Usage: $0 {start|stop|restart}"
+#    exit 1
+#esac
+#
+#exit 0
