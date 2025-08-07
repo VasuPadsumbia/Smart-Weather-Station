@@ -15,3 +15,8 @@ iface wlan0 inet static
     post-down killall -q wpa_supplicant
     wait-delay 15
 iface default inet dhcp
+auto wlan0_sta
+iface wlan0_sta inet dhcp
+    pre-up wpa_supplicant -B -D nl80211 -i wlan0_sta -c /etc/wpa_supplicant.conf -p no_p2p -P /var/run/wpa_supplicant_sta.pid
+    post-down start-stop-daemon --stop --quiet --pidfile /var/run/wpa_supplicant_sta.pid --retry 30
+    wait-delay 15

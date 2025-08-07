@@ -1,0 +1,6 @@
+#!/bin/sh
+DAEMON=/usr/sbin/hostapd
+CONF=/etc/hostapd/hostapd.conf
+start()  { echo "Starting hostapd"; "$DAEMON" "$CONF" -B; }
+stop()   { echo "Stopping hostapd"; killall hostapd 2>/dev/null || true; }
+action=${1:-start}; case "$action" in start) start ;; stop) stop ;; restart) stop; start ;; esac

@@ -1,0 +1,6 @@
+config BR2_PACKAGE_APSTA_FW
+    bool "Download AP-STA firmware blob for Pi Zero 2 W"
+    help
+      Downloads brcmfmac43436-sdio.apsta.bin into $(BUILD_DIR) but
+      does not install it.  Useful if you want the file for manual
+      flashing or debugging.

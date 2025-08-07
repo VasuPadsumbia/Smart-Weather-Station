@@ -2,6 +2,9 @@
     "cmake.sourceDirectory": "/home/vasu/AELD/Smart-Weather-Station/app",
     "files.associations": {
         "bme280.h": "c",
-        "iostream": "cpp"
+        "iostream": "cpp",
+        "*.pc": "cpp",
+        "*.vms": "cpp",
+        "random": "cpp"
     }
 }

@@ -5,9 +5,17 @@ auto eth0
 iface eth0 inet dhcp
     pre-up /etc/network/nfs_check
     wait-delay 15
+
 auto wlan0
-iface wlan0 inet dhcp
-    pre-up wpa_supplicant -B -Dnl80211 -iwlan0 -c/etc/wpa_supplicant.conf
+iface wlan0 inet static
+iface wlan0 inet static
+    address 192.168.2.1
+    netmask 255.255.255.0
+    network 192.168.2.0
+    gateway 192.168.2.1
+    pre-up wpa_supplicant -B -Dnl80211 -i wlan0 -c /etc/wpa_supplicant.conf
     post-down killall -q wpa_supplicant
     wait-delay 15
 iface default inet dhcp
+
+

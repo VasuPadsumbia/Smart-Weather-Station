@@ -1,0 +1,15 @@
+#!/bin/sh
+DAEMON=/usr/sbin/dnsmasq
+CONF=/etc/dnsmasq.conf
+
+start()  { echo "Starting dnsmasq"; "$DAEMON" -C "$CONF"; }
+stop()   { echo "Stopping dnsmasq"; killall dnsmasq 2>/dev/null || true; }
+
+action=${1:-start}
+case "$action" in
+  start)   start ;;
+  stop)    stop ;;
+  restart) stop; start ;;
+  status)  pidof dnsmasq >/dev/null && echo running || { echo stopped; exit 1; } ;;
+  *) echo "Usage: $0 {start|stop|restart|status}"; exit 1 ;;
+esac
