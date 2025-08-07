@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Smart Weather Station — Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin: 16px; }
+    .row { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
+    .card { border: 1px solid #ddd; border-radius: 10px; padding: 12px; box-shadow: 0 1px 3px rgba(0,0,0,.06); }
+    .title { margin: 0 0 12px; }
+    .value { font-size: 2.2rem; margin: 4px 0; }
+    .unit { font-size: 0.9rem; color: #666; }
+    .status { display:inline-block; padding: 2px 8px; border-radius: 999px; font-size: 0.85rem; margin-left: 8px; }
+    .ok { background:#defade; color:#094; } .bad { background:#ffe2e2; color:#a00; } .warn { background:#fff3cd; color:#8a6d3b; }
+    pre { white-space: pre-wrap; }
+    .footer { margin-top: 10px; color: #666; font-size: 0.85rem; }
+  </style>
+</head>
+<body>
+  <h1 class="title">
+    Smart Weather Station
+    <span id="status" class="status warn">connecting…</span>
+  </h1>
+
+  <div class="row">
+    <div class="card">
+      <div>Temperature</div>
+      <div class="value"><span id="t">–</span><span class="unit"> °C</span></div>
+      <div class="footer" id="t-minmax">min – / max –</div>
+    </div>
+    <div class="card">
+      <div>Humidity</div>
+      <div class="value"><span id="h">–</span><span class="unit"> %</span></div>
+      <div class="footer" id="h-minmax">min – / max –</div>
+    </div>
+    <div class="card">
+      <div>Pressure</div>
+      <div class="value"><span id="p">–</span><span class="unit"> hPa</span></div>
+      <div class="footer" id="p-minmax">min – / max –</div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:12px;">
+    <canvas id="chart" height="140"></canvas>
+  </div>
+
+  <div class="card" style="margin-top:12px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">
+      <div><strong>Last message</strong>: <span id="lastts">–</span></div>
+      <div>
+        <button id="pauseBtn">Pause</button>
+        <button id="resumeBtn" disabled>Resume</button>
+      </div>
+    </div>
+    <pre id="raw" style="margin-top:8px;max-height:220px;overflow:auto;">(waiting…)</pre>
+  </div>
+
+  <script>
+    // ---------- SETTINGS ----------
+    // Your publisher sends to 'weather/data' with JSON keys:
+    // {"temperature": 23.57, "humidity": 32, "pressure": 1012.9}
+    const TOPICS = ['weather/data', 'weather/data/last']; // include retained if you set it
+    const HISTORY = 300;         // number of points kept in chart
+    const DEC = 2;               // decimals to show
+    const FALLBACK_HOST = '192.168.1.101'; // set your Pi IP here
+
+    // If you enabled Mosquitto auth, fill in below and pass `options` to mqtt.connect:
+    // const options = { username: 'vasu', password: 'YOUR_PASSWORD', keepalive: 60, reconnectPeriod: 2000 };
+    const options = { keepalive: 60, reconnectPeriod: 2000 };
+
+    // Build ws:// URL that works whether page is opened via http://<pi-ip>/ or file://
+    const hostParam = new URLSearchParams(location.search).get('host');
+    const host = hostParam || location.hostname || FALLBACK_HOST;
+    const scheme = location.protocol === 'https:' ? 'wss://' : 'ws://';
+    const wsURL = scheme + host + ':9001';
+
+    // ---------- STATE ----------
+    let paused = false;
+    const td = new TextDecoder();
+    const statusEl = document.getElementById('status');
+    const rawEl = document.getElementById('raw');
+    const lasttsEl = document.getElementById('lastts');
+
+    const tEl = document.getElementById('t');
+    const hEl = document.getElementById('h');
+    const pEl = document.getElementById('p');
+    const tmmEl = document.getElementById('t-minmax');
+    const hmmEl = document.getElementById('h-minmax');
+    const pmmEl = document.getElementById('p-minmax');
+
+    let tMin = +Infinity, tMax = -Infinity;
+    let hMin = +Infinity, hMax = -Infinity;
+    let pMin = +Infinity, pMax = -Infinity;
+
+    const labels = [];
+    const seriesT = [];
+    const seriesH = [];
+    const seriesP = [];
+
+    function pushPoint(ts, t, h, p) {
+      labels.push(ts);
+      seriesT.push(t);
+      seriesH.push(h);
+      seriesP.push(p);
+      if (labels.length > HISTORY) { labels.shift(); seriesT.shift(); seriesH.shift(); seriesP.shift(); }
+    }
+
+    // ---------- CHART ----------
+    const ctx = document.getElementById('chart').getContext('2d');
+    const chart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [
+          { label: 'Temperature (°C)', data: seriesT, yAxisID: 'y', tension: 0.2 },
+          { label: 'Humidity (%)',     data: seriesH, yAxisID: 'y', tension: 0.2 },
+          { label: 'Pressure (hPa)',   data: seriesP, yAxisID: 'y1', tension: 0.2 }
+        ]
+      },
+      options: {
+        animation: false,
+        responsive: true,
+        scales: {
+          y:  { type: 'linear', position: 'left'  },
+          y1: { type: 'linear', position: 'right', grid: { drawOnChartArea: false } }
+        },
+        plugins: { legend: { display: true } }
+      }
+    });
+
+    // ---------- MQTT ----------
+    const client = mqtt.connect(wsURL, options);
+
+    client.on('connect', () => {
+      statusEl.textContent = 'connected';
+      statusEl.className = 'status ok';
+      for (const t of TOPICS) client.subscribe(t);
+      log(`Connected to ${wsURL}. Subscribed: ${TOPICS.join(', ')}`);
+    });
+
+    client.on('reconnect', () => {
+      statusEl.textContent = 'reconnecting…';
+      statusEl.className = 'status warn';
+    });
+
+    client.on('close', () => {
+      statusEl.textContent = 'closed';
+      statusEl.className = 'status bad';
+    });
+
+    client.on('error', (e) => {
+      statusEl.textContent = 'error';
+      statusEl.className = 'status bad';
+      log('Error: ' + (e && e.message ? e.message : e));
+    });
+
+    client.on('message', (_topic, payload) => {
+      const now = new Date();
+      lasttsEl.textContent = now.toLocaleString();
+      const text = td.decode(payload);
+      log(`${now.toLocaleTimeString()}  ${_topic}\n${text}\n---`);
+
+      // Accept either raw text or JSON
+      let j;
+      try { j = JSON.parse(text); } catch { return; }
+
+      let t = j.temperature ?? j.temperature_c ?? j.temp ?? null;
+      let h = j.humidity    ?? j.humidity_pct ?? j.rh ?? null;
+      let p = j.pressure    ?? j.pressure_hpa ?? j.p ?? null;
+
+      // If pressure looks like Pa, convert to hPa
+      if (p !== null && p > 2000) p = p / 100.0;
+
+      if (t !== null) { tEl.textContent = t.toFixed(DEC); tMin = Math.min(tMin, t); tMax = Math.max(tMax, t); tmmEl.textContent = `min ${tMin.toFixed(DEC)} / max ${tMax.toFixed(DEC)}`; }
+      if (h !== null) { hEl.textContent = h.toFixed(DEC); hMin = Math.min(hMin, h); hMax = Math.max(hMax, h); hmmEl.textContent = `min ${hMin.toFixed(DEC)} / max ${hMax.toFixed(DEC)}`; }
+      if (p !== null) { pEl.textContent = p.toFixed(DEC); pMin = Math.min(pMin, p); pMax = Math.max(pMax, p); pmmEl.textContent = `min ${pMin.toFixed(DEC)} / max ${pMax.toFixed(DEC)}`; }
+
+      if (!paused && t !== null && h !== null && p !== null) {
+        pushPoint(now.toLocaleTimeString(), t, h, p);
+        chart.update('none');
+      }
+    });
+
+    // ---------- UI ----------
+    function log(s) {
+      rawEl.textContent = s + "\n" + rawEl.textContent;
+    }
+    document.getElementById('pauseBtn').onclick = () => { paused = true; document.getElementById('pauseBtn').disabled = true; document.getElementById('resumeBtn').disabled = false; };
+    document.getElementById('resumeBtn').onclick = () => { paused = false; document.getElementById('pauseBtn').disabled = false; document.getElementById('resumeBtn').disabled = true; };
+  </script>
+</body>
+</html>

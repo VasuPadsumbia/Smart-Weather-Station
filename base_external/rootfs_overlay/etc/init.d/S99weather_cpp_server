@@ -7,31 +7,44 @@
 # Short-Description: Start weather C++ server daemon at boot time
 ### END INIT INFO
 
-DAEMON_PATH="/opt/smart_weather_station"
-DAEMON="$DAEMON_PATH/weather_cpp_server"
-PIDFILE="/var/run/weather_cpp_server.pid"
-LOGFILE="/var/log/weather_cpp_server.log"
+DAEMON=/usr/bin/server_app
+PIDFILE=/var/run/weather_cpp_server.pid
+LOGFILE=/var/log/weather_cpp_server.log
 
-modprobe i2c-dev
-modprobe i2c-bcm2708
-modprobe i2c-bcm2835
-#case "$1" in
-#  start)
-#    echo "Starting weather_cpp_server..."
-#    start-stop-daemon --start --background --make-pidfile --pidfile $PIDFILE --exec $DAEMON
-#    ;;
-#  stop)
-#    echo "Stopping weather_cpp_server..."
-#    start-stop-daemon --stop --pidfile $PIDFILE
-#    ;;
-#  restart)
-#    $0 stop
-#    sleep 1
-#    $0 start
-#    ;;
-#  *)
-#    echo "Usage: $0 {start|stop|restart}"
-#    exit 1
-#esac
-#
-#exit 0
+start() {
+  echo "Starting weather_cpp_server..."
+  mkdir -p "$(dirname "$PIDFILE")" "$(dirname "$LOGFILE")"
+  # Load I2C modules; bcm2708 is deprecated—use bcm2835
+  modprobe i2c-dev 2>/dev/null || true
+  modprobe i2c-bcm2835 2>/dev/null || true
+
+  # If already running, skip
+  pidof server_app >/dev/null 2>&1 && { echo "Already running"; return 0; }
+
+  # Background with PID file and log redirection
+  start-stop-daemon --start --quiet --background \
+    --make-pidfile --pidfile "$PIDFILE" \
+    --exec /bin/sh -- -c "$DAEMON >> '$LOGFILE' 2>&1"
+}
+
+stop() {
+  echo "Stopping weather_cpp_server..."
+  if [ -f "$PIDFILE" ]; then
+    start-stop-daemon --stop --quiet --pidfile "$PIDFILE" && rm -f "$PIDFILE"
+  else
+    killall server_app 2>/dev/null || true
+  fi
+}
+
+status() { pidof server_app >/dev/null && echo running || { echo stopped; return 1; } }
+
+# Default to "start" if no argument is given
+action="${1:-start}"
+case "$action" in
+  start)   start ;;
+  stop)    stop ;;
+  restart) stop; sleep 1; start ;;
+  status)  status ;;
+  *) echo "Usage: $0 {start|stop|restart|status}"; exit 1 ;;
+esac
+exit 0

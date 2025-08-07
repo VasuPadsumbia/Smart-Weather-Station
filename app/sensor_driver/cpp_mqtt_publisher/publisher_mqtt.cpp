@@ -27,8 +27,9 @@ bool publish_mqtt(const bme280_data_t& data, const char* broker, const char* top
     json << "\"humidity\": " << data.humidity;
     json << "}";
 
-    int ret = mosquitto_publish(mosq, NULL, topic, json.str().size(), json.str().c_str(), 0, false);
-    if (ret != MOSQ_ERR_SUCCESS) {
+    int ret = mosquitto_publish(mosq, NULL, topic, json.str().size(), json.str().c_str(), 1, true);
+    int ret2 = mosquitto_publish(mosq, NULL, "weather/data/last", json.str().size(), json.str().c_str(), 1, true);
+    if (ret != MOSQ_ERR_SUCCESS || ret2 != MOSQ_ERR_SUCCESS) {
         std::cerr << "Mosquitto publish error: " << mosquitto_strerror(ret) << "\n";
         mosquitto_disconnect(mosq);
         mosquitto_destroy(mosq);

@@ -78,7 +78,7 @@ int main() {
                     std::cerr << "Sensor read failed\n";
                 }
             }
-            std::this_thread::sleep_for(std::chrono::seconds(5));
+            std::this_thread::sleep_for(std::chrono::seconds(1));
         }
     });
 

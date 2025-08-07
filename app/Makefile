@@ -49,7 +49,7 @@ weather_app: $(WEATHER_OBJS)
 	$(CXX) $(CXXFLAGS) $^ -o $@ $(LDFLAGS)
 
 server_app: $(SERVER_OBJS)
-	$(CXX) $(CXXFLAGS) $^ -o $@ -lpthread
+	$(CXX) $(CXXFLAGS) $^ -o $@ -lpthread -lmosquitto -lcurl $(LDFLAGS)
 
 %.o: %.c
 	$(CC) $(CFLAGS) -c $< -o $@
