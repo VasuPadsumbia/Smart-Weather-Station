@@ -35,6 +35,8 @@ bool publish_mqtt(const bme280_data_t& data, const char* broker, const char* top
         mosquitto_destroy(mosq);
         return false;
     }
+    mosquitto_loop(mosq, 1000, 1);
+    mosquitto_cleanup(mosq);
     //mosquitto_lib_cleanup();
     return true;
 }

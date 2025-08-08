@@ -53,7 +53,7 @@ int main() {
         return 1;
     }
 
-    const char* broker = "localhost";
+    const char* broker = "192.168.2.1";
     const char* topic = "weather/data";
     const int mqtt_port = 1883;
 
